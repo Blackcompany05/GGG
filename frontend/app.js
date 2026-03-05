@@ -7,13 +7,21 @@ let products = [];
 let cart = [];
 let lastPayload = null;
 
-const API_URL = import.meta.env.VITE_API_URL;
-fetch(`${API_URL}/api/products`);
+// กำหนด URL เริ่มต้น (แทนที่ import.meta.env เดิมที่ทำให้เกิด Error)
+const DEFAULT_API_URL = "http://localhost:3000";
+
 // ============ INITIALIZATION ============
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Encrypted E-Commerce Store initialized');
     loadSavedConfig();
+    
+    // ตั้งค่า URL เริ่มต้นถ้าในช่อง Input ว่าง
+    const apiUrlInput = document.getElementById('apiUrl');
+    if (apiUrlInput && !apiUrlInput.value) {
+        apiUrlInput.value = DEFAULT_API_URL;
+    }
+
     loadProducts();
     updateCartUI();
 });
@@ -64,6 +72,8 @@ async function loadProducts() {
 
 function renderProducts() {
     const productsList = document.getElementById('productsList');
+    if (!productsList) return;
+    
     productsList.innerHTML = '';
 
     products.forEach(product => {
@@ -131,38 +141,40 @@ function updateCartUI() {
     const checkoutSection = document.getElementById('checkoutSection');
     const checkoutBtn = document.getElementById('checkoutBtn');
 
-    cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+    if (cartCount) cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     if (cart.length === 0) {
-        cartItems.innerHTML = '';
-        cartEmpty.classList.remove('hidden');
-        checkoutSection.classList.add('hidden');
-        checkoutBtn.classList.remove('hidden');
+        if (cartItems) cartItems.innerHTML = '';
+        if (cartEmpty) cartEmpty.classList.remove('hidden');
+        if (checkoutSection) checkoutSection.classList.add('hidden');
+        if (checkoutBtn) checkoutBtn.classList.remove('hidden');
     } else {
-        cartEmpty.classList.add('hidden');
-        checkoutBtn.classList.remove('hidden');
+        if (cartEmpty) cartEmpty.classList.add('hidden');
+        if (checkoutBtn) checkoutBtn.classList.remove('hidden');
 
-        cartItems.innerHTML = '';
-        cart.forEach(item => {
-            const cartItem = document.createElement('div');
-            cartItem.className = 'cart-item';
-            cartItem.innerHTML = `
-                <div class="cart-item-info">
-                    <h4>${item.name}</h4>
-                    <p class="cart-item-price">฿${item.price.toLocaleString()}</p>
-                </div>
-                <div class="cart-item-quantity">
-                    <button onclick="updateQuantity(${item.id}, ${item.quantity - 1})">−</button>
-                    <input type="number" value="${item.quantity}" min="1" onchange="updateQuantity(${item.id}, parseInt(this.value))">
-                    <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
-                </div>
-                <div class="cart-item-subtotal">
-                    ฿${(item.price * item.quantity).toLocaleString()}
-                </div>
-                <button class="btn-remove" onclick="removeFromCart(${item.id})">✕</button>
-            `;
-            cartItems.appendChild(cartItem);
-        });
+        if (cartItems) {
+            cartItems.innerHTML = '';
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <div class="cart-item-info">
+                        <h4>${item.name}</h4>
+                        <p class="cart-item-price">฿${item.price.toLocaleString()}</p>
+                    </div>
+                    <div class="cart-item-quantity">
+                        <button onclick="updateQuantity(${item.id}, ${item.quantity - 1})">−</button>
+                        <input type="number" value="${item.quantity}" min="1" onchange="updateQuantity(${item.id}, parseInt(this.value))">
+                        <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
+                    </div>
+                    <div class="cart-item-subtotal">
+                        ฿${(item.price * item.quantity).toLocaleString()}
+                    </div>
+                    <button class="btn-remove" onclick="removeFromCart(${item.id})">✕</button>
+                `;
+                cartItems.appendChild(cartItem);
+            });
+        }
 
         updateCartSummary();
     }
@@ -173,9 +185,13 @@ function updateCartSummary() {
     const shipping = 100;
     const total = subtotal + shipping;
 
-    document.getElementById('subtotal').textContent = `฿${subtotal.toLocaleString()}`;
-    document.getElementById('shipping').textContent = `฿${shipping.toLocaleString()}`;
-    document.getElementById('total').textContent = `฿${total.toLocaleString()}`;
+    const subtotalEl = document.getElementById('subtotal');
+    const shippingEl = document.getElementById('shipping');
+    const totalEl = document.getElementById('total');
+
+    if (subtotalEl) subtotalEl.textContent = `฿${subtotal.toLocaleString()}`;
+    if (shippingEl) shippingEl.textContent = `฿${shipping.toLocaleString()}`;
+    if (totalEl) totalEl.textContent = `฿${total.toLocaleString()}`;
 }
 
 // ============ CHECKOUT & ORDERS ============
@@ -183,6 +199,8 @@ function updateCartSummary() {
 function toggleCheckout() {
     const checkoutSection = document.getElementById('checkoutSection');
     const checkoutBtn = document.getElementById('checkoutBtn');
+
+    if (!checkoutSection || !checkoutBtn) return;
 
     if (checkoutSection.classList.contains('hidden')) {
         checkoutSection.classList.remove('hidden');
@@ -273,7 +291,10 @@ async function placeOrder() {
             toggleCheckout();
             
             showToast(`✓ Order placed! Order ID: ${decryptedObj.orderId}`, 'success');
-            toggleEncryptionModal();
+            
+            // ป้องกัน Error กรณีไม่มี Modal นี้ใน HTML
+            const modal = document.getElementById('encryptionModal');
+            if(modal) toggleEncryptionModal();
 
         } else {
             throw new Error(responseData.error || 'Unknown response error');
@@ -314,8 +335,10 @@ async function testConnection() {
         const data = await response.json();
         
         saveConfig();
-        statusDiv.innerHTML = `✓ Connected! Version: ${data.version}`;
-        statusDiv.className = 'status-success';
+        if (statusDiv) {
+            statusDiv.innerHTML = `✓ Connected! Version: ${data.version}`;
+            statusDiv.className = 'status-success';
+        }
         showToast('✓ Connection test successful', 'success');
 
         // Load master key if provided
@@ -327,8 +350,10 @@ async function testConnection() {
         await loadProducts();
 
     } catch (error) {
-        statusDiv.innerHTML = `✗ Connection failed: ${error.message}`;
-        statusDiv.className = 'status-error';
+        if (statusDiv) {
+            statusDiv.innerHTML = `✗ Connection failed: ${error.message}`;
+            statusDiv.className = 'status-error';
+        }
         showToast(`✗ Connection failed: ${error.message}`, 'error');
     }
 }
@@ -354,21 +379,26 @@ async function loadMasterKey(keyBase64) {
 
 function toggleCart() {
     const cartPanel = document.getElementById('cartPanel');
-    cartPanel.classList.toggle('hidden');
+    if (cartPanel) cartPanel.classList.toggle('hidden');
 }
 
 function toggleConfig() {
     const configPanel = document.getElementById('configPanel');
-    configPanel.classList.toggle('hidden');
+    if (configPanel) configPanel.classList.toggle('hidden');
 }
 
 function toggleEncryptionModal() {
     const modal = document.getElementById('encryptionModal');
-    modal.classList.toggle('hidden');
+    if (modal) modal.classList.toggle('hidden');
 }
 
 function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
+    if (!toast) {
+        console.log(`[${type}] ${message}`);
+        return;
+    }
+    
     toast.textContent = message;
     toast.className = `toast toast-${type} show`;
     
