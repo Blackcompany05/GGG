@@ -7,6 +7,8 @@ let products = [];
 let cart = [];
 let lastPayload = null;
 
+const API_URL = import.meta.env.VITE_API_URL;
+fetch(`${API_URL}/api/products`);
 // ============ INITIALIZATION ============
 
 document.addEventListener('DOMContentLoaded', () => {
