@@ -1,0 +1,27 @@
+{
+  "name": "encrypted-transaction-api",
+  "version": "1.0.0",
+  "description": "Secure encrypted transaction API with AES-GCM encryption",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "encryption",
+    "security",
+    "banking",
+    "AES-GCM"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "helmet": "^7.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
